@@ -1,0 +1,55 @@
+-- First Ever Github post, its pure slop but better than nothing ill improve it later
+
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UID = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+
+
+local function LocatePlayer()
+	local prev = math.huge
+    local Closest = nil
+    local myChar = LocalPlayer.Character
+    for i, Player in ipairs(Players:GetPlayers()) do
+    	local targetChar = Player.Character
+        if targetChar == nil or targetChar == myChar then
+        	continue
+
+        end
+        local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+        local TargetPos = targetRoot.Position
+        local Spos, onscreen = Camera:WorldToScreenPoint(TargetPos)
+        local myMouse = UID:GetMouseLocation()
+        if onscreen then
+        	local distance = (myMouse - Vector2.new(Spos.X, Spos.Y)).Magnitude
+            if distance < prev then
+            	prev = distance
+                Closest = targetRoot
+            end
+        end
+
+    end
+return Closest
+end
+
+local toggled = false
+local ClosestP = nil
+
+UID.InputBegan:Connect(function(IT, gameP)
+	if IT.KeyCode == Enum.KeyCode.C and not gameP then
+		toggled = not toggled
+        ClosestP = LocatePlayer()
+	end
+end)
+
+
+
+
+RunService.RenderStepped:Connect(function()
+	if toggled then
+		Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, ClosestP.Position)
+	end
+end)
