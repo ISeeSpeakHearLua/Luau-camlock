@@ -1,0 +1,83 @@
+--Including Tween service with delay
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UID = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local TweenService = game:GetService("TweenService")
+
+
+
+local function LocatePlayer()
+	local prev = math.huge
+    local Closest = nil
+    local ShouldSnap = false
+    local myChar = LocalPlayer.Character
+    for i, Player in ipairs(Players:GetPlayers()) do
+    	local targetChar = Player.Character
+        if targetChar == nil or targetChar == myChar then
+        	continue
+
+        end
+        local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+        local TargetPos = targetRoot.Position
+        local Spos, onscreen = Camera:WorldToScreenPoint(TargetPos)
+        local myMouse = UID:GetMouseLocation()
+        if onscreen then
+        	local distance = (myMouse - Vector2.new(Spos.X, Spos.Y)).Magnitude
+            if distance < prev then
+            	prev = distance
+                Closest = targetRoot
+                ClosestPlayer = Player.Name
+                
+            end
+        end
+
+    end
+return Closest, ClosestPlayer, prev
+end
+local tweening = false
+local toggled = false
+local ClosestP = nil
+local Player = nil
+local Distance = nil
+
+UID.InputBegan:Connect(function(IT, gameP)
+	if IT.KeyCode == Enum.KeyCode.C and not gameP then
+		toggled = not toggled
+        ClosestP, Player, Distance = LocatePlayer()
+        if Distance ~= nil and Distance > 150  then 
+        	tweening = true
+        	local CameraTween = TweenService:Create(Camera, TweenInfo.new(0.3), {CFrame = CFrame.lookAt(Camera.CFrame.Position, ClosestP.Position)})
+            CameraTween.Completed:Once(function()
+            tweening = false
+            end)
+            CameraTween:Play()
+        end
+        
+	end
+end)
+
+
+local gui = Instance.new("ScreenGui", game.Players.LocalPlayer.PlayerGui)
+local text = Instance.new("TextLabel", gui)
+
+text.Size = UDim2.new(0, 200, 0, 40)
+text.Position = UDim2.new(1, -220, 0, 50)
+text.BackgroundTransparency = 1
+text.Text = "No Player"
+text.TextColor3 = Color3.fromRGB(0, 255, 100)
+text.Font = Enum.Font.Gotham
+text.TextSize = 22
+
+RunService.RenderStepped:Connect(function()
+	if toggled and not tweening then
+		local velocity = ClosestP.AssemblyLinearVelocity
+        local predPos = ClosestP.Position + velocity * 0.01
+       
+		Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, predPos)
+        text.Text = Player
+	end
+end)
+
